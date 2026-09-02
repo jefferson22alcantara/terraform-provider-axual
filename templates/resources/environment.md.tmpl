@@ -1,0 +1,39 @@
+# {{.Name}} ({{.Type}})
+
+{{ .Description | trimspace }}
+
+## Required Roles
+- ENVIRONMENT_AUTHOR or ENVIRONMENT_ADMIN
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Example Usage
+
+```hcl
+data "axual_instance" "testInstance"{
+  short_name = "testInstance"
+}
+```
+
+```hcl
+resource "axual_environment" "development" {
+  name = "development"
+  short_name = "dev"
+  description = "This is the development environment"
+  color = "#19b9be"
+  visibility = "Public"
+  authorization_issuer = "Auto"
+  instance = data.axual_instance.testInstance.id
+  owners = axual_group.tenant_admin_group.id
+}
+```
+
+For a full example which shows the capabilities of the latest TerraForm provider, check https://github.com/Axual/terraform-provider-axual/tree/master/examples/axual.
+
+## Import
+Import is supported using the following syntax:
+
+```shell
+terraform import axual_environment.<LOCAL NAME> <ENVIRONMENT UID>
+terraform import axual_environment.test_env ab1cf1d63a55436391463cee3f56e393
+```

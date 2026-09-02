@@ -1,0 +1,14 @@
+#Terraform
+.terraform.*
+.terraform
+terraform.tfstate*
+
+#IntelliJ IDEA
+*.iml
+.idea
+
+#Debug
+__debug_bin
+
+# Local Terraform provider build
+.local/

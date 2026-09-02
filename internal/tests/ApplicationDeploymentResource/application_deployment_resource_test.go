@@ -1,0 +1,156 @@
+package ApplicationDeploymentResource
+
+import (
+	"regexp"
+	"testing"
+
+	. "axual.com/terraform-provider-axual/internal/tests"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+func TestApplicationDeploymentResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: GetProviderConfig(t).ProtoV6ProviderFactories,
+		ExternalProviders:        GetProviderConfig(t).ExternalProviders,
+
+		Steps: []resource.TestStep{
+			// Test missing active Application Principal - should fail pre-flight check
+			{
+				Config: GetProvider() + GetFile(
+					"axual_application_deployment_setup.tf",
+					"axual_application_deployment_no_active_principal.tf",
+				),
+				ExpectError: regexp.MustCompile(`No active Application Principal`),
+			},
+			// Test missing `configs` - should fail response
+			{
+				Config: GetProvider() + GetFile(
+					"axual_application_deployment_setup.tf",
+					"axual_application_deployment_missing_configs.tf",
+				),
+				ExpectError: regexp.MustCompile(`Invalid config uploaded`),
+			},
+			{
+				Config: GetProvider() + GetFile(
+					"axual_application_deployment_setup.tf",
+					"axual_application_deployment_initial.tf",
+				),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair("axual_application_deployment.connector_axual_application_deployment", "environment", "axual_environment.tf-test-env", "id"),
+					resource.TestCheckResourceAttrPair("axual_application_deployment.connector_axual_application_deployment", "application", "axual_application.tf-test-app", "id"),
+					resource.TestCheckResourceAttr("axual_application_deployment.connector_axual_application_deployment", "configs.topic", "test-topic"),
+					resource.TestCheckResourceAttr("axual_application_deployment.connector_axual_application_deployment", "configs.tasks.max", "1"),
+					CheckBodyMatchesFile("axual_application_principal.connector_axual_application_principal", "principal", CertPath("connector-cert.crt")),
+					CheckBodyMatchesFile("axual_application_principal.connector_axual_application_principal", "private_key", CertPath("connector-cert.key")),
+				),
+			},
+			{
+				Config: GetProvider() + GetFile(
+					"axual_application_deployment_setup.tf",
+					"axual_application_deployment_updated.tf",
+				),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair("axual_application_deployment.connector_axual_application_deployment", "environment", "axual_environment.tf-test-env", "id"),
+					resource.TestCheckResourceAttrPair("axual_application_deployment.connector_axual_application_deployment", "application", "axual_application.tf-test-app", "id"),
+					resource.TestCheckResourceAttr("axual_application_deployment.connector_axual_application_deployment", "configs.topic", "test-topic"),
+					resource.TestCheckResourceAttr("axual_application_deployment.connector_axual_application_deployment", "configs.tasks.max", "2"),
+				),
+			},
+			{
+				ResourceName:      "axual_application_deployment.connector_axual_application_deployment",
+				ImportState:       true,
+				ImportStateVerify: true,
+				Config:            GetProvider() + GetFile("axual_application_deployment_updated.tf"),
+			},
+			{
+				Config: GetProvider() + GetFile(
+					"axual_application_deployment_setup.tf",
+					"axual_application_deployment_cert_rotated.tf",
+				),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair("axual_application_deployment.connector_axual_application_deployment", "environment", "axual_environment.tf-test-env", "id"),
+					resource.TestCheckResourceAttrPair("axual_application_deployment.connector_axual_application_deployment", "application", "axual_application.tf-test-app", "id"),
+					CheckBodyMatchesFile("axual_application_principal.connector_axual_application_principal", "principal", CertPath("connector_cert_rotated.cer")),
+					CheckBodyMatchesFile("axual_application_principal.connector_axual_application_principal", "private_key", CertPath("connector_cert_rotated.key")),
+				),
+			},
+			{
+				// To ensure cleanup if one of the test cases had an error
+				Destroy: true,
+				Config: GetProvider() + GetFile(
+					"axual_application_deployment_setup.tf",
+					"axual_application_deployment_cert_rotated.tf",
+				),
+			},
+		},
+	})
+}
+
+func TestApplicationDeploymentKSMLResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: GetProviderConfig(t).ProtoV6ProviderFactories,
+		ExternalProviders:        GetProviderConfig(t).ExternalProviders,
+
+		Steps: []resource.TestStep{
+			// Test invalid `restart_policy` - should fail validation
+			{
+				Config: GetProvider() + GetFile(
+					"axual_application_deployment_ksml_setup.tf",
+					"axual_application_deployment_ksml_invalid_restart_policy.tf",
+				),
+				ExpectError: regexp.MustCompile(`Attribute restart_policy value must be one of: `),
+			},
+			// Test missing `definition` - should fail response
+			{
+				Config: GetProvider() + GetFile(
+					"axual_application_deployment_ksml_setup.tf",
+					"axual_application_deployment_ksml_missing_definition.tf",
+				),
+				ExpectError: regexp.MustCompile(`KSML_DEFINITION must be provided`),
+			},
+			{
+				Config: GetProvider() + GetFile(
+					"axual_application_deployment_ksml_setup.tf",
+					"axual_application_deployment_ksml_initial.tf",
+				),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair("axual_application_deployment.ksml_axual_application_deployment", "environment", "axual_environment.tf-test-ksml-env", "id"),
+					resource.TestCheckResourceAttrPair("axual_application_deployment.ksml_axual_application_deployment", "application", "axual_application.tf-test-ksml-app", "id"),
+					resource.TestCheckResourceAttr("axual_application_deployment.ksml_axual_application_deployment", "type", "Ksml"),
+					resource.TestCheckResourceAttr("axual_application_deployment.ksml_axual_application_deployment", "deployment_size", "S"),
+					resource.TestCheckResourceAttr("axual_application_deployment.ksml_axual_application_deployment", "restart_policy", "on_exit"),
+					resource.TestCheckResourceAttrSet("axual_application_deployment.ksml_axual_application_deployment", "definition"),
+				),
+			},
+			{
+				Config: GetProvider() + GetFile(
+					"axual_application_deployment_ksml_setup.tf",
+					"axual_application_deployment_ksml_updated.tf",
+				),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair("axual_application_deployment.ksml_axual_application_deployment", "environment", "axual_environment.tf-test-ksml-env", "id"),
+					resource.TestCheckResourceAttrPair("axual_application_deployment.ksml_axual_application_deployment", "application", "axual_application.tf-test-ksml-app", "id"),
+					resource.TestCheckResourceAttr("axual_application_deployment.ksml_axual_application_deployment", "type", "Ksml"),
+					resource.TestCheckResourceAttr("axual_application_deployment.ksml_axual_application_deployment", "deployment_size", "M"),
+					resource.TestCheckNoResourceAttr("axual_application_deployment.ksml_axual_application_deployment", "restart_policy"),
+					resource.TestCheckResourceAttrSet("axual_application_deployment.ksml_axual_application_deployment", "definition"),
+				),
+			},
+			{
+				ResourceName:      "axual_application_deployment.ksml_axual_application_deployment",
+				ImportState:       true,
+				ImportStateVerify: true,
+				Config:            GetProvider() + GetFile("axual_application_deployment_ksml_updated.tf"),
+			},
+			{
+				// To ensure cleanup if one of the test cases had an error
+				Destroy: true,
+				Config: GetProvider() + GetFile(
+					"axual_application_deployment_ksml_setup.tf",
+					"axual_application_deployment_ksml_updated.tf",
+				),
+			},
+		},
+	})
+}

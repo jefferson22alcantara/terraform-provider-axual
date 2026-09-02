@@ -1,0 +1,37 @@
+# {{.Name}} ({{.Type}})
+
+{{ .Description | trimspace }}
+
+## Required Roles
+- TENANT_ADMIN
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Example Usage
+
+```hcl
+resource "axual_group" "team-awesome" {
+  name          = "Team Awesome"
+  phone_number="+37253412559"
+  email_address="team.awesome@example.com"
+  members       = [
+    	data.axual_user.tom.id,
+    	data.axual_user.john.id
+    	]
+  managers       = [
+      	data.axual_user.tom.id,
+      	data.axual_user.kate.id
+      	]
+}
+```
+
+For a full example which shows the capabilities of the latest TerraForm provider, check https://github.com/Axual/terraform-provider-axual/tree/master/examples/axual.
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+terraform import axual_group.<LOCAL NAME> <GROUP UID>
+terraform import axual_group.test_group b21cf1d63a55436391463cee3f56e393
+```
