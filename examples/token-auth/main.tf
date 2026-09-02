@@ -9,11 +9,13 @@ terraform {
 variable "axual_api_url" {
   type        = string
   description = "Axual API base URL"
+  default     = ""
 }
 
 variable "axual_realm" {
   type        = string
   description = "Axual realm"
+  default     = ""
 }
 
 variable "axual_token" {
@@ -25,6 +27,7 @@ variable "axual_token" {
 variable "axual_instance_name" {
   type        = string
   description = "Name of an existing Axual instance"
+  default     = "ota"
 }
 
 provider "axual" {
