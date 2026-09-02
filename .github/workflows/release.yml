@@ -16,6 +16,8 @@ permissions:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    env:
+      RELEASE_SIGNING: ${{ secrets.GPG_PRIVATE_KEY != '' && secrets.PASSPHRASE != '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -26,7 +28,7 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
       - name: Import GPG key
-        if: ${{ secrets.GPG_PRIVATE_KEY != '' && secrets.PASSPHRASE != '' }}
+        if: env.RELEASE_SIGNING == 'true'
         uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
         id: import_gpg
         with:
@@ -35,7 +37,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
-          args: ${{ secrets.GPG_PRIVATE_KEY != '' && secrets.PASSPHRASE != '' && 'release --clean' || 'release --clean --skip=sign' }}
+          args: ${{ env.RELEASE_SIGNING == 'true' && 'release --clean' || 'release --clean --skip=sign' }}
         env:
           # GitHub sets the GITHUB_TOKEN secret automatically.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
