@@ -36,7 +36,7 @@ This is the Terraform Provider for Axual Platform, allowing users to manage Axua
   - `resource_*.go`: Resource implementations (CRUD operations)
   - `data_source_*.go`: Data source implementations (read-only)
 - **axual-webclient/**: HTTP client library for Axual API interactions
-  - Handles authentication, API requests, and response processing
+  - Handles authentication Authorization: Bearer $token, API requests, and response processing
   - Each resource type has corresponding client methods
 - **internal/tests/**: Acceptance tests organized by resource type
   - `test_provider.go`: Test provider configuration
@@ -46,9 +46,8 @@ This is the Terraform Provider for Axual Platform, allowing users to manage Axua
 ### Provider Configuration
 The provider requires authentication configuration pointing to an Axual Platform instance:
 - `apiurl`: Base URL for Axual API
-- `authurl`: OAuth2 token endpoint
-- `realm`, `clientid`, `username`, `password`: Authentication credentials
-- `scopes`: OAuth2 scopes
+- `authurl`: Base URL for Axual API
+- `realm`, `token`: Authentication credentials (Authorization: Bearer $token )
 
 ### Resource Pattern
 Each Terraform resource follows this pattern:
