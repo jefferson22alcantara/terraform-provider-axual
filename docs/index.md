@@ -45,6 +45,20 @@ provider "axual" {
 }
 ```
 
+#### Using an already-issued bearer token
+
+If you already hold a valid access token (e.g. minted by your own CI/CD pipeline or SSO integration), you can skip the username/password token exchange entirely and have the provider send it directly as `Authorization: Bearer $token` on every API request:
+
+```hcl
+provider "axual" {
+  authmode = "token"
+  # URL that will be used by the client for all resource requests
+  apiurl   = "https://axual.cloud/api"
+  # (Sensitive) Already-issued bearer token. It can be omitted if the environment variable AXUAL_AUTH_TOKEN is used.
+  token    = "PLEASE_CHANGE_TOKEN"
+}
+```
+
 ### Step 2 – Define Resources
 
 Before using the provider:

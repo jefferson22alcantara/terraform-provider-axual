@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/function"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"golang.org/x/oauth2"
 	"os"
 	"strings"
 
@@ -65,7 +66,25 @@ func (p *AxualProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	}
 
 	if authMode == "token" {
-		c, err := webclient.NewClientv2(apiurl, realm, data.Token.ValueString())
+		var token string
+		if data.Token.IsNull() {
+			token = os.Getenv("AXUAL_AUTH_TOKEN")
+			if token == "" {
+				resp.Diagnostics.AddError(
+					"Missing Token",
+					"Token is not provided in configuration and the AXUAL_AUTH_TOKEN environment variable is not set.",
+				)
+				return
+			}
+		} else {
+			token = data.Token.ValueString()
+		}
+
+		ts := oauth2.StaticTokenSource(&oauth2.Token{
+			AccessToken: token,
+			TokenType:   "Bearer",
+		})
+		c, err := webclient.NewClientv2(apiurl, realm, "token", ts)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to create client",
@@ -225,7 +244,7 @@ func (p *AxualProvider) Schema(ctx context.Context, req provider.SchemaRequest, 
 				Optional:            true,
 			},
 			"token": schema.StringAttribute{
-				MarkdownDescription: "Already-issued bearer token (required when authmode is token)",
+				MarkdownDescription: "Already-issued bearer token, sent as `Authorization: Bearer $token` on every request (required when authmode is token). It can be omitted if the environment variable AXUAL_AUTH_TOKEN is used.",
 				Optional:            true,
 				Sensitive:           true,
 			},

@@ -54,14 +54,14 @@ func getCachedTokenSource(auth AuthStruct) oauth2.TokenSource {
 	return tokenSourceCache
 }
 
-// SignIn creates an authenticated HTTP client.
+// SignIn returns a refreshable oauth2.TokenSource for the given auth configuration.
 // For Auth0, it uses the cached token source.
-// For Keycloak, it uses the normal password grant flow.
-func SignIn(auth AuthStruct) (*http.Client, error) {
+// For Keycloak, it uses the normal password grant flow, wrapped so the token
+// is automatically refreshed once it expires.
+func SignIn(auth AuthStruct) (oauth2.TokenSource, error) {
 	switch auth.AuthMode {
 	case "auth0":
-		ts := getCachedTokenSource(auth)
-		return oauth2.NewClient(context.Background(), ts), nil
+		return getCachedTokenSource(auth), nil
 	case "keycloak":
 		userName := auth.Username
 		password := auth.Password
@@ -79,8 +79,7 @@ func SignIn(auth AuthStruct) (*http.Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		ts := oauth2.ReuseTokenSource(token, conf.TokenSource(context.Background(), token))
-		return oauth2.NewClient(context.Background(), ts), nil
+		return oauth2.ReuseTokenSource(token, conf.TokenSource(context.Background(), token)), nil
 	default:
 		return nil, fmt.Errorf("invalid auth mode: %s", auth.AuthMode)
 	}
