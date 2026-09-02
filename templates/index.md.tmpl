@@ -59,6 +59,8 @@ provider "axual" {
 }
 ```
 
+A full runnable example is available at [`examples/axual-token`](https://github.com/Axual/terraform-provider-axual/tree/master/examples/axual-token).
+
 ### Step 2 – Define Resources
 
 Before using the provider:
